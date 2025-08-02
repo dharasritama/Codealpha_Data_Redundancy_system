@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud Data Redundancy System</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        :root {
+            --primary-color: #4a6fa5;
+            --secondary-color: #166088;
+            --accent-color: #4fc3f7;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+            --danger-color: #e63946;
+            --success-color: #2a9d8f;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f0f2f5;
+            color: var(--dark-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .data-form {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin: 2rem auto;
+            max-width: 600px;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--secondary-color);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(79, 195, 247, 0.25);
+        }
+
+        .btn {
+            display: inline-block;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        .btn:hover {
+            background-color: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+        }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+            padding: 0.5rem 0.75rem;
+            font-size: 0.9rem;
+        }
+
+        .btn-danger:hover {
+            background-color: #dc2545;
+        }
+
+        .btn-small {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.85rem;
+        }
+
+        .data-table {
+            background-color: white;
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin: 2rem auto;
+            max-width: 1000px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 3px double #000;
+            border-right: 3px double #000;
+        }
+
+        th {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            border-bottom: 3px double #fff;
+            border-right: 3px double #fff;
+        }
+
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        th:last-child, td:last-child {
+        border-right: none;
+        }
+        .action-column {
+            width: 100px;
+            text-align: center;
+        }
+
+        .alert-box {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem;
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            transform: translateY(-100px);
+            transition: transform 0.3s ease;
+            max-width: 350px;
+        }
+
+        .alert-box.show {
+            transform: translateY(0);
+        }
+
+        .alert-success {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .alert-error {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .alert-warning {
+            background-color: #f39c12;
+            color: white;
+        }
+
+        .duplicate-warning {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+            padding: 0.75rem;
+            margin-top: 1rem;
+            color: #721c24;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .confirmation-dialog {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .confirmation-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .confirmation-buttons {
+            margin-top: 1.5rem;
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem 0;
+            margin-top: 2rem;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 15px;
+            }
+            
+            th, td {
+                padding: 0.75rem 0.5rem;
+            }
+            
+            .alert-box {
+                right: 15px;
+                max-width: calc(100vw - 30px);
+            }
+
+            .btn-small {
+                padding: 0.3rem 0.6rem;
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Cloud Data Redundancy System</h1>
+            <p class="subtitle">Ensure data accuracy by eliminating duplicates in your cloud database</p>
+        </div>
+    </header>
+
+        <section class="data-form">
+            <h2>Add New Data</h2>
+            <p>Fill out the form below to add new data. The system will automatically check for duplicates.</p>
+            
+            <form id="dataForm">
+                <div class="form-group">
+                    <label for="fullName">Full Name</label>
+                    <input type="text" id="fullName" class="form-control" placeholder="Abc Xyz" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" class="form-control" placeholder="pqrs@company.com" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="phone">Phone Number</label>
+                    <input type="tel" id="phone" class="form-control" placeholder="1234567890" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="Department">Department</label>
+                    <select id="Department" class="form-control" required>
+                        <option value="">Select Department</option>
+                        <option value="engineering">Engineering</option>
+                        <option value="management">Management</option>
+                        <option value="marketing">Marketing</option>
+                        <option value="finance">Finance</option>
+                        <option value="hr">Human Resources</option>
+                        <option value="rd">Research and Development</option>
+                    </select>
+                </div>
+                
+                <div id="duplicateWarning" class="duplicate-warning">
+                    <strong>⚠️ Potential Duplicate Detected!</strong><br>
+                    <span id="duplicateMessage"></span>
+                </div>
+                
+                <button type="submit" class="btn btn-success" id="submitBtn">Verify and Add Data</button>
+            </form>
+        </section>
+
+        <section class="data-table">
+            <h2> Stored Data Records</h2>
+            <div id="dataTable">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Full Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Department</th>
+                            <th>Date Added</th>
+                            <th class="action-column">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataTableBody">
+                        <tr>
+                            <td colspan="6" style="text-align: center; color: #666;">Loading data...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <!-- Confirmation Dialog -->
+    <div id="confirmationDialog" class="confirmation-dialog">
+        <div class="confirmation-content">
+            <h3>Confirm Deletion</h3>
+            <p id="confirmationMessage">Are you sure you want to delete this record?</p>
+            <div class="confirmation-buttons">
+                <button class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+                <button class="btn" id="cancelDeleteBtn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="alertBox" class="alert-box"></div>
+
+    <footer>
+        <div class="container">
+            <p>Cloud Data Redundancy System</p>
+        </div>
+    </footer>
+
+    <script>
+        // Global variables
+        let isFirebaseConnected = false;
+        let useLocalStorage = true; // Default to local storage for reliability
+        let allData = [];
+        let deleteIndex = -1; // Track which item to delete
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBqtBYyv8Y7tzUZs7xvyPJPMIKvJs7M6XE",
+            authDomain: "data-redundancy-system.firebaseapp.com",
+            databaseURL: "https://data-redundancy-system-default-rtdb.firebaseio.com",
+            projectId: "data-redundancy-system",
+            storageBucket: "data-redundancy-system.appspot.com",
+            messagingSenderId: "685843984214",
+            appId: "1:685843984214:web:5b6af2a6b8279c5b31ad92"
+        };
+
+        // Initialize Firebase
+        let database;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            database = firebase.database();
+        } catch (error) {
+            console.error('Firebase initialization failed:', error);
+            useLocalStorage = true;
+        }
+
+        // DOM elements
+        const dataForm = document.getElementById('dataForm');
+        const dataTableBody = document.getElementById('dataTableBody');
+        const alertBox = document.getElementById('alertBox');
+        const submitBtn = document.getElementById('submitBtn');
+        const connectionStatus = document.getElementById('connectionStatus');
+        const storageMode = document.getElementById('storageMode');
+        const lastOperation = document.getElementById('lastOperation');
+        const duplicateWarning = document.getElementById('duplicateWarning');
+        const duplicateMessage = document.getElementById('duplicateMessage');
+        const confirmationDialog = document.getElementById('confirmationDialog');
+        const confirmationMessage = document.getElementById('confirmationMessage');
+        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+        const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+
+        // Update status display
+        function updateConnectionStatus(status, className) {
+            try {
+                connectionStatus.textContent = status;
+                connectionStatus.className = `status-value ${className}`;
+            } catch (error) {
+                console.error('Error updating connection status:', error);
+            }
+        }
+
+        function updateStorageMode(mode, className) {
+            try {
+                storageMode.textContent = mode;
+                storageMode.className = `status-value ${className}`;
+            } catch (error) {
+                console.error('Error updating storage mode:', error);
+            }
+        }
+
+        function updateLastOperation(operation) {
+            try {
+                lastOperation.textContent = operation;
+            } catch (error) {
+                console.error('Error updating last operation:', error);
+            }
+        }
+
+        // Show alert message
+        function showAlert(message, type) {
+            try {
+                alertBox.textContent = message;
+                alertBox.className = `alert-box ${type} show`;
+                
+                setTimeout(() => {
+                    alertBox.classList.remove('show');
+                }, 5000);
+            } catch (error) {
+                console.error('Error showing alert:', error);
+            }
+        }
+
+        // Local Storage functions
+        function saveToLocalStorage(data) {
+            try {
+                const existingData = JSON.parse(localStorage.getItem('dataRecords') || '[]');
+                data.id = Date.now().toString();
+                existingData.push(data);
+                localStorage.setItem('dataRecords', JSON.stringify(existingData));
+                allData = existingData;
+                return { success: true };
+            } catch (error) {
+                console.error('Error saving to localStorage:', error);
+                return { success: false, error: error.message };
+            }
+        }
+
+        function loadFromLocalStorage() {
+            try {
+                const data = JSON.parse(localStorage.getItem('dataRecords') || '[]');
+                allData = data;
+                return data;
+            } catch (error) {
+                console.error('Error loading from localStorage:', error);
+                allData = [];
+                return [];
+            }
+        }
+
+        function deleteFromLocalStorage(index) {
+            try {
+                const existingData = JSON.parse(localStorage.getItem('dataRecords') || '[]');
+                if (index >= 0 && index < existingData.length) {
+                    existingData.splice(index, 1);
+                    localStorage.setItem('dataRecords', JSON.stringify(existingData));
+                    allData = existingData;
+                    return { success: true };
+                }
+                return { success: false, error: 'Invalid index' };
+            } catch (error) {
+                console.error('Error deleting from localStorage:', error);
+                return { success: false, error: error.message };
+            }
+        }
+
+        // Simple duplicate checking
+        function checkForDuplicates(newData) {
+            try {
+                updateLastOperation('Checking for duplicates...');
+                
+                if (!allData || allData.length === 0) {
+                    return { isDuplicate: false };
+                }
+                
+                const newEmail = newData.email.toLowerCase().trim();
+                const newPhone = newData.phone.replace(/\D/g, '');
+                
+                for (const entry of allData) {
+                    if (!entry) continue;
+                    
+                    // Check email duplicate
+                    if (entry.email && entry.email.toLowerCase().trim() === newEmail) {
+                        return {
+                            isDuplicate: true,
+                            field: 'Email address',
+                            message: `This email is already registered for ${entry.fullName || 'another user'}`
+                        };
+                    }
+                    
+                    // Check phone duplicate
+                    if (entry.phone && newPhone) {
+                        const existingPhone = entry.phone.replace(/\D/g, '');
+                        if (existingPhone === newPhone) {
+                            return {
+                                isDuplicate: true,
+                                field: 'Phone number',
+                                message: `This phone number is already registered for ${entry.fullName || 'another user'}`
+                            };
+                        }
+                    }
+                }
+                
+                return { isDuplicate: false };
+            } catch (error) {
+                console.error('Error in duplicate checking:', error);
+                return { isDuplicate: false };
+            }
+        }
+
+        // Add data function
+        function addData(data) {
+            try {
+                return saveToLocalStorage(data);
+            } catch (error) {
+                console.error('Error adding data:', error);
+                return { success: false, error: error.message };
+            }
+        }
+
+        // Delete data function
+        function deleteData(index) {
+            try {
+                updateLastOperation('Deleting data...');
+                const result = deleteFromLocalStorage(index);
+                if (result.success) {
+                    updateLastOperation('Data deleted successfully');
+                } else {
+                    updateLastOperation('Failed to delete data');
+                }
+                return result;
+            } catch (error) {
+                console.error('Error deleting data:', error);
+                updateLastOperation('Error deleting data');
+                return { success: false, error: error.message };
+            }
+        }
+
+        // Show delete confirmation
+        function showDeleteConfirmation(index, recordName) {
+            deleteIndex = index;
+            confirmationMessage.textContent = `Are you sure you want to delete the record for "${recordName}"?`;
+            confirmationDialog.style.display = 'flex';
+        }
+
+        // Hide delete confirmation
+        function hideDeleteConfirmation() {
+            deleteIndex = -1;
+            confirmationDialog.style.display = 'none';
+        }
+
+        // Load and display data
+        function loadAndDisplayData() {
+            try {
+                updateLastOperation('Loading data...');
+                const data = loadFromLocalStorage();
+                displayData(data);
+                updateLastOperation('Data loaded successfully');
+            } catch (error) {
+                console.error('Error loading data:', error);
+                updateLastOperation('Error loading data');
+            }
+        }
+
+        function displayData(data) {
+            try {
+                dataTableBody.innerHTML = '';
+                
+                if (data && data.length > 0) {
+                    data.forEach((entry, index) => {
+                        if (!entry) return;
+                        
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${entry.fullName || 'N/A'}</td>
+                            <td>${entry.email || 'N/A'}</td>
+                            <td>${entry.phone || 'N/A'}</td>
+                            <td>${entry.department || 'N/A'}</td>
+                            <td>${entry.dateAdded || 'N/A'}</td>
+                            <td class="action-column">
+                                <button class="btn btn-danger btn-small" onclick="showDeleteConfirmation(${index}, '${entry.fullName || 'Unknown'}')">
+                                    🗑️ Delete
+                                </button>
+                            </td>
+                        `;
+                        dataTableBody.appendChild(row);
+                    });
+                } else {
+                    const row = document.createElement('tr');
+                    row.innerHTML = '<td colspan="6" style="text-align: center; color: #666;">No data records found</td>';
+                    dataTableBody.appendChild(row);
+                }
+            } catch (error) {
+                console.error('Error displaying data:', error);
+                dataTableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: red;">Error displaying data</td></tr>';
+            }
+        }
+
+        // Form submission handler
+        dataForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            try {
+                console.log('Form submission started');
+                
+                const formData = {
+                    fullName: document.getElementById('fullName').value.trim(),
+                    email: document.getElementById('email').value.trim(),
+                    phone: document.getElementById('phone').value.trim(),
+                    department: document.getElementById('Department').value,
+                    dateAdded: new Date().toLocaleDateString(),
+                    timestamp: Date.now()
+                };
+                
+                console.log('Form data:', formData);
+                
+                // Validate form data
+                if (!formData.fullName || !formData.email || !formData.phone || !formData.department) {
+                    showAlert('Please fill in all required fields', 'alert-error');
+                    return;
+                }
+                
+                // Disable button
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Checking...';
+                
+                // Check for duplicates
+                console.log('Checking for duplicates...');
+                const duplicateResult = checkForDuplicates(formData);
+                console.log('Duplicate check result:', duplicateResult);
+                
+                if (duplicateResult.isDuplicate) {
+                    showAlert(`Duplicate found: ${duplicateResult.message}`, 'alert-error');
+                    duplicateMessage.textContent = duplicateResult.message;
+                    duplicateWarning.style.display = 'block';
+                    return;
+                }
+                
+                // Hide duplicate warning
+                duplicateWarning.style.display = 'none';
+                
+                submitBtn.textContent = 'Adding...';
+                
+                // Add data
+                console.log('Adding data...');
+                const result = addData(formData);
+                console.log('Add data result:', result);
+                
+                if (result.success) {
+                    showAlert('Data added successfully!', 'alert-success');
+                    dataForm.reset();
+                    loadAndDisplayData(); // Reload the table
+                } else {
+                    showAlert(`Error: ${result.error}`, 'alert-error');
+                }
+                
+            } catch (error) {
+                console.error('Error in form submission:', error);
+                showAlert(`Submission error: ${error.message}`, 'alert-error');
+            } finally {
+                // Reset button
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Verify and Add Data';
+            }
+        });
+
+        // Delete confirmation handlers
+        confirmDeleteBtn.addEventListener('click', () => {
+            if (deleteIndex >= 0) {
+                const result = deleteData(deleteIndex);
+                
+                if (result.success) {
+                    showAlert('Record deleted successfully!', 'alert-success');
+                    loadAndDisplayData(); // Reload the table
+                } else {
+                    showAlert(`Error deleting record: ${result.error}`, 'alert-error');
+                }
+                
+                hideDeleteConfirmation();
+            }
+        });
+
+        cancelDeleteBtn.addEventListener('click', () => {
+            hideDeleteConfirmation();
+        });
+
+        // Close confirmation dialog when clicking outside
+        confirmationDialog.addEventListener('click', (e) => {
+            if (e.target === confirmationDialog) {
+                hideDeleteConfirmation();
+            }
+        });
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                console.log('Initializing application...');
+                updateConnectionStatus('Local Mode', 'status-local');
+                updateStorageMode('Local Storage', 'status-local');
+                updateLastOperation('Initializing...');
+                
+                loadAndDisplayData();
+                
+                updateLastOperation('Ready');
+                console.log('Application initialized successfully');
+            } catch (error) {
+                console.error('Error initializing application:', error);
+                showAlert('Error initializing application', 'alert-error');
+            }
+        });
+    </script>
+</body>
+</html>
+
+
+
